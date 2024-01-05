@@ -1,19 +1,17 @@
 import { Context, Schema, h } from 'koishi'
-import { Canvas } from 'koishi-plugin-skia-canvas'
 import xCrawl from 'x-crawl'
 import fs from 'fs'
 import path from 'path'
 import { DB, mapper } from './data'
+import { Canvas } from 'koishi-plugin-skia-canvas'
 
 export const name = 'ba-raid'
 export const usage = '## 感谢以下数据源：\n- [AronaAi](https://arona.ai/graph/)：提供了47期往后的总力统计信息\n- [bawiki](https://ba.gamekee.com/)：提供了总力概览信息\n' +
-  '### 注意事项：\n- 使用图形化输出：Linux服务器的bot可能出现图形中文乱码的现象，请自行安装微软雅黑字体。\n'+
-  '### 功能和指令：\n - 功能：分数线，最高分，通关人数，排名或分数互查(仅二档内)，查看boss上场次数。\n'+
-  '- 指令：zlcx bosscx rankcx，详情请自行help\n'+
+  '### 注意事项：\n- 使用图形化输出：Linux服务器的bot可能出现图形中文乱码的现象，请自行安装微软雅黑字体。\n' +
+  '### 功能和指令：\n - 功能：分数线，最高分，通关人数，排名或分数互查(仅二档内)，查看boss上场次数。\n' +
+  '- 指令：zlcx bosscx rankcx，详情请自行help\n' +
   '### 反馈及建议：\n- 请发送邮件至eruru.sion@gmail.com'
-export const inject = {
-  required: ['canvas','database'],
-}
+
 export interface Config {
   'toPhoto': boolean
 }
@@ -21,7 +19,9 @@ export interface Config {
 export const Config: Schema<Config> = Schema.object({
   'toPhoto': Schema.boolean().default(true).description('图形化渲染'),
 })
-
+export const inject = {
+  required: ['canvas', 'database'],
+}
 export function apply(ctx: Context, config: Config) {
   const myXCrawl = xCrawl({ timeout: 10000, intervalTime: { max: 2000, min: 1000 }, maxRetry: 3 })
   const totalPath = path.join(ctx.baseDir, 'cache', 'total')
@@ -29,19 +29,11 @@ export function apply(ctx: Context, config: Config) {
   ctx.on('ready', async () => {
     fs.mkdirSync(totalPath, { recursive: true })
     await DB.initTotalTable(ctx)
-    await getRecord(ctx)
-    await autoCrawl()
+    //await getRecord(ctx)
+    //await autoCrawl()
   })
   ctx.on('dispose', () => {
     dispo = false
-  })
-  ctx.before('send', async (session) => {
-    if (config.toPhoto) {
-      session.event.message.elements[0].type = 'image'
-      let img = toPng(session.event.message.elements[0].attrs.content)
-      delete session.event.message.elements[0].attrs.content
-      session.event.message.elements[0].attrs.url = img
-    }
   })
   ctx.command('zlcx', '获取总力数据(47期往后)。').alias('总力查询').example('zlcx 60')
     .usage("可选参数：期数\n快捷查询：\n总力人数查询(zlcx -l)\n总力最高分查询(zlcx -t)")
@@ -58,6 +50,9 @@ export function apply(ctx: Context, config: Config) {
         } else {
           data = await queryTotal(res[0], 1)
         }
+        if (config.toPhoto) {
+          data = h.image(toPng(data))
+        }
         await session.send(data)
       } catch (error) {
         session.send("查无此期数据")
@@ -73,9 +68,13 @@ export function apply(ctx: Context, config: Config) {
         }
       }
       try {
+        let resultData
         let res = await ctx.database.get('ba_jp_total', { boss_name: bossName })
         let data = await queryTotal(res[res.length - 1], 1)
-        let resultData = `${res[0].boss_name}共出现：${res.length}期\n最近一期：第${res[res.length - 1].season}期\n${data}`
+        resultData = `${res[0].boss_name}共出现：${res.length}期\n最近一期：第${res[res.length - 1].season}期\n${data}`
+        if (config.toPhoto) {
+          resultData = h.image(toPng(resultData))
+        }
         await session.send(resultData)
       } catch (error) {
         session.send("查无此Boss")
@@ -92,10 +91,13 @@ export function apply(ctx: Context, config: Config) {
         let score = args.length === 1 ? parseInt(args[0]) : parseInt(args[1])
         if (Number.isNaN(score)) {
           return '输入异常'
-        }
+        }let data
         //默认查询和选期查询
         let res = args.length === 1 ? await ctx.database.select('ba_jp_total').orderBy('season', 'desc').limit(1).execute() : await ctx.database.get('ba_jp_total', { season: parseInt(args[0]) })
-        let data = await queryTotal(res[0], query, score)
+        data = await queryTotal(res[0], query, score)
+        if (config.toPhoto) {
+          data = h.image(toPng(data))
+        }
         await session.send(data)
       } catch (error) {
         session.send("查无此期数据")
@@ -340,8 +342,9 @@ export function apply(ctx: Context, config: Config) {
     let lines = data.split('\n')//行分割
     const fontSize = 20
     const lineHeight = 1.2
+    const height = (lines.length + 1) * fontSize * lineHeight
     let lineWidth = lines.reduce((maxWidth, line) => Math.max(maxWidth, line.length), 0) * 0.75//最长行
-    const canvas = ctx.canvas.createCanvas(lineWidth * fontSize, (lines.length + 1) * fontSize * lineHeight)
+    const canvas = ctx.canvas.createCanvas(lineWidth * fontSize, height)
     const context = canvas.getContext("2d")
     context.fillStyle = '#ffffff'
     context.fillRect(0, 0, canvas.width, canvas.height)

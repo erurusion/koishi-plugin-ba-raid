@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-ba-raid",
   "description": "ba日服总力工具",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -22,11 +22,22 @@
   },
   "peerDependencies": {
     "koishi": "^4.16.3",
-    "koishi-plugin-skia-canvas": "^0.3.6",
-    "x-crawl": "^8.3.1"
+    "koishi-plugin-skia-canvas": "^0.3.6"
   },
   "dependencies": {
     "koishi-plugin-skia-canvas": "^0.3.6",
     "x-crawl": "^8.3.1"
+  },
+  "devDependencies": {
+    "koishi-plugin-skia-canvas": "^0.3.6",
+    "x-crawl": "^8.3.1"
+  },
+  "koishi": {
+    "service": {
+      "required": [
+        "canvas",
+        "database"
+      ]
+    }
   }
 }
