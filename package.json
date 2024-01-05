@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-ba-raid",
   "description": "ba日服总力工具",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -9,13 +9,24 @@
     "dist"
   ],
   "license": "MIT",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "ba",
+    "总力"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erurusion/koishi-plugin-ba-raid.git"
+  },
   "peerDependencies": {
-    "koishi": "^4.16.3"
+    "koishi": "^4.16.3",
+    "koishi-plugin-skia-canvas": "^0.3.6",
+    "x-crawl": "^8.3.1"
+  },
+  "dependencies": {
+    "koishi-plugin-skia-canvas": "^0.3.6",
+    "x-crawl": "^8.3.1"
   }
 }
